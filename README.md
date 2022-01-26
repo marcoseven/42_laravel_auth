@@ -1,61 +1,475 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+# Laravel Auth/Vue
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/d/total.svg" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/v/stable.svg" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://poser.pugx.org/laravel/framework/license.svg" alt="License"></a>
-</p>
+## Install Laravel
 
-## About Laravel
+```bash
+composer require laravel/laravel --prefer-dist=7.0
+```
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Install Laravel UI to scaffold everything you need to authenticate users in your app.
+<https://laravel.com/docs/7.x/authentication>
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+```bash
+composer require laravel/ui:^2.4
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```
 
-## Learning Laravel
+## DB configuration
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+While you wait for the ui installation, configure the databae
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+mysql -ufab -ppassword
+create database 42_laravel_games
+exit
+```
 
-## Laravel Sponsors
+Nel file .env
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+```env
 
-### Premium Partners
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3307
+DB_DATABASE=42_laravel_games
+DB_USERNAME=fab
+DB_PASSWORD=password
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[OP.GG](https://op.gg)**
+Fai la migrazione
 
-## Contributing
+```bash
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+php artisan migrate
 
-## Code of Conduct
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## Laravel UI scaffolding
+the db will be migrated, including the users table.
 
-## Security Vulnerabilities
+Check available options for laravel ui
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```php
+php artisan #<-- look for a new command called ui
 
-## License
+php artisan help ui # <-- visualize all options for the ui command 
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Now run the ui command to scaffold the frontend authentication using vue (🖖).
+Alternatively you can choose bootstrap (👍) or react (👎).
+
+<https://laravel.com/docs/7.x/frontend>
+
+```bash
+php artisan ui vue --auth
+```
+
+Next follow the steps on screen and run npm install and dev
+
+```bash
+npm i && npm run dev
+
+```
+
+## Account registration and layout organization
+
+Now that the authentication scaffolding is ready to use, let's create an account and register at localhost:8000/register.
+
+remember: if you have not created the database and migrated it, it won't work.
+
+Next we can create two layouts one for the admin and one for guests and later extend them in our views.
+
+### Admin Layout
+
+A file called layouts/app.blade.php already exists, created by out ui scaffolding. let's make a copy and rename it admin.blade.php. We will also replace css and js links so that we can use completely different assets for that section of the application.
+
+```bash
+
+cd resources/views/layouts
+cp app.blade.php admin.blade.php
+```
+
+Next we will update css and js links
+
+```html
+<link href="{{ asset('css/admin.css') }}" rel="stylesheet">
+
+ <script src="{{ asset('js/admin.js') }}" defer></script>
+```
+
+And configure webpack.mix.js to generate this files in the public folder when we compile.
+
+```js
+mix
+    .js('resources/js/app.js', 'public/js')
+    .js('resources/js/admin.js', 'public/js') // <-- Add this 
+    .sass('resources/sass/app.scss', 'public/css')
+    .sass('resources/sass/admin.scss', 'public/css'); // <-- Add this 
+```
+
+Since we are here why now add also the other configurations that we will need later when building out application. This is the final webpack.mix.js file
+
+```js
+mix
+    .options({
+        processCssUrls: false
+    })
+    .copyDirectory('resources/img', 'public/img')
+    .js('resources/js/app.js', 'public/js')
+    .js('resources/js/admin.js', 'public/js')
+    .sass('resources/sass/app.scss', 'public/css')
+    .sass('resources/sass/admin.scss', 'public/css');
+
+```
+
+remember that with these configurations in place we need to add the img directory and create the necessary js and css files before running the compiler.
+
+```bash
+cd resouces
+mkdir img
+cp js/app.js js/admin.js
+cp sass/app.scss sass/admin.scss
+
+```
+
+With the commands above me make a copy of js and css files and create the img directory. now we can run `npm run watch` and see if everything works.
+
+now we can use this admin.blade.php layout in the home.blade.php view.
+
+Since we will have two separate areas for out admin and guest users we move the home.blade.php file inside an admin/ folder too.
+
+```bash
+cd resources/views
+mkdir admin
+mv home.blade.php admin/home.blade.php
+
+```
+
+now update the extends directive like so
+
+```blade
+
+@extends('layouts.admin')
+
+```
+
+Before moving forward, we need to update the controller method so return the correct view location. 
+
+in HomeController.php
+
+```php
+    public function index()
+    {
+        return view('admin.home'); #< -- the view is under admin/ now
+    }
+```
+
+Now we can change the admin layout and show a sidebar here for the admin to manage the application.
+
+Let's grab a sice admin panel from bootstrap website
+<https://getbootstrap.com/docs/5.1/examples/dashboard/>
+
+the only thing we will need to keep from the original layout is the right side of nav that we can copy later from the other layout file.
+
+let's copy everything that we find inside the body of the bootstrap dashboard example inside the #app div on your layout file. In admin.blade.php we now have
+
+```php
+
+    <div id="app">
+
+
+       /* Bootstrap markup here */
+
+    </div>
+
+```
+
+copy the dashboard.css content inside the admin.scss file.
+<https://getbootstrap.com/docs/5.1/examples/dashboard/dashboard.css>
+
+The layout is broken because by default version 4 is installed, but we are using bootstrap 5 not 4 so Update the dependency in package.json
+
+```json
+ "bootstrap": "^5.1.0",
+```
+
+then run `npm i`
+
+The dashboard layout should work fine now, let's make the final touches.
+
+On the top right we need to replace the signout link with the actual markup generated by laravel. 
+
+Insde the `header`
+
+```php
+   @auth
+    <div class="name text-white">Hi {{ Auth::user()->name }}</div>
+    <div class="logout text-white">
+        <a class="nav-link" href="{{ route('logout') }}" onclick="event.preventDefault();
+            document.getElementById('logout-form').submit();">
+            {{ __('Logout') }}
+        </a>
+
+        <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
+            @csrf
+        </form>
+    </div>
+    @endauth
+```
+
+then let's yield the main content inside  `main`
+
+```php
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+    @yield('content')
+</main>
+
+```
+
+and finally update the home.blade.php view to use the entire space available.
+
+```php
+<div class="card my-2">
+    <div class="card-header">{{ __('Dashboard') }}</div>
+
+    <div class="card-body">
+        @if (session('status'))
+        <div class="alert alert-success" role="alert">
+            {{ session('status') }}
+        </div>
+        @endif
+
+        {{ __('You are logged in!') }} from your dashboard you can add, edit and delete stuff.
+    </div>
+</div>
+```
+
+### Guest Layout
+
+The gust layout is pretty much ready as it is. We can if we want add a few link placeholders in the nav for later.
+
+```php
+
+ <!-- Left Side Of Navbar -->
+    <ul class="navbar-nav mr-auto">
+        <li class="nav-item">
+            <a class="nav-link" href="">Homepage</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="">About</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="">Contacts</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="">Shop</a>
+        </li>
+    </ul>
+```
+
+Note: the default dropdown won't work, update the attribute `data-toggle` to `data-bs-toggle="dropdown"` in bootstrap5
+and change che class `ml-auto` to `ms-auto` to allign the dropdown to the left
+
+The final layout file
+
+```php
+    /* Inside the body tag */
+    <div id="app">
+        <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
+            <div class="container">
+                <a class="navbar-brand" href="{{ url('/') }}">
+                    {{ config('app.name', 'Laravel') }}
+                </a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="{{ __('Toggle navigation') }}">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <!-- Left Side Of Navbar -->
+                    <ul class="navbar-nav mr-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="">Homepage</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="">About</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="">Contacts</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="">Shop</a>
+                        </li>
+                    </ul>
+
+                    <!-- Right Side Of Navbar -->
+                    <ul class="navbar-nav ms-auto">
+                        <!-- Authentication Links -->
+                        @guest
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('login') }}">{{ __('Login') }}</a>
+                        </li>
+                        @if (Route::has('register'))
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('register') }}">{{ __('Register') }}</a>
+                        </li>
+                        @endif
+                        @else
+
+                        <li class="nav-item dropdown">
+                            <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
+                                {{ Auth::user()->name }}
+                            </a>
+
+                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                               
+                                <a class="dropdown-item" href="{{ route('home') }}">
+                                    Admin
+                                </a>
+                               <a class="dropdown-item" href="{{ route('logout') }}" onclick="event.preventDefault();
+                                                     document.getElementById('logout-form').submit();">
+                                    {{ __('Logout') }}
+                                </a>
+
+                                <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
+                                    @csrf
+                                </form>
+                            </div>
+                        </li>
+                        @endguest
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <main class="py-4">
+            @yield('content')
+        </main>
+    </div>
+
+
+```
+
+Then we can extend this layout in welcome.blade.php
+
+```php
+@extends('layouts.app')
+
+
+@section('content')
+
+<h1>Welcome</h1>
+
+@endsection
+```
+
+## Routing and Groups
+
+Create a route group for admin routes. and move in it the home route. Since we are using namespace, prefix and name for the goup of routes we can change the route that shows our dashboard a little.
+
+```php
+Route::middleware('auth')->prefix('admin')->namespace('Admin')->name('admin.')->group(function(){
+    Route::get('/', 'HomeController@index')->name('index');
+});
+```
+
+since the route for the dashboard has a new name we need to update the link in the layout app.blade.php
+
+Then move the HomeController in the Admin namespace
+create a new HomeController in the Admin namespace and move in it the index method.
+
+```php
+   public function index()
+    {
+        return view('admin.home');
+    }
+```
+
+Finally, the route name is now `admin` and not home so in the RouteServiceProvider we need to change the configuration that redirects the logged in user to the dashboard.
+
+```php
+    public const HOME = '/admin';
+```
+
+Logout and login again to check if the redirect works.
+
+## CRUD AND VIEWS FOR ADMIN/GUESTS
+
+Lets start by defining a model for our shop called `Product` design the migration `products` and create two controllers one in the Admin namespace to manage the products actions. Plus a few routes.
+
+### Define routes
+
+in web.php define two route resources for the guest and the admin. Put the admin route in the group and those for the guest outside
+
+```php
+Route::resource('products', ProductController::class)->only([
+    'index','show'
+]);
+
+
+Auth::routes();
+
+
+Route::middleware('auth')->prefix('admin')->namespace('Admin')->name('admin.')->group(function(){
+    Route::get('/', 'HomeController@index')->name('index');
+
+    Route::resource('products', ProductController::class);
+});
+```
+
+### Create the product model, migration and seeder
+
+`php artisan make:model -ms Product`
+
+### Create the controllers
+
+```bash
+php artisan make:controller -r -m Product Admin/ProductController
+php artisan make:controller -r -m Product ProductController
+```
+
+Leave only the `index` and `show` methods inside the ProductController
+
+### define migration structure and the seeder
+
+Let's populate the db with products.
+
+## Now we can create the logic to show products on the fronend and in the dashboard.
+
+Product table schema
+
+```php
+$table->id();
+$table->string('name');
+$table->string('image')->nullable();
+$table->decimal('price', 6, 2)->nullable();
+$table->text('description')->nullable();
+$table->timestamps();
+```
+
+Product seeder
+
+```php
+
+     for ($i=0; $i < 15; $i++) {
+            $product = new Product();
+            $product->name = $faker->sentence();
+            $product->description = $faker->text();
+            $product->image = $faker->imageUrl(600, 400, 'Products', $product->name);
+            $product->price = $faker->randomFloat(2, 100, 200);
+            $product->save();
+        }
+```
+
+Migrate and seed
+
+```php
+
+php artisan migrate --seed
+
+```
+
+Note: you need to add the seeder classes to the DatabaseSeeder.
+
+## NOW IMPLEMENT ALL VIEWS and CRUD ops for the given Product resorce
+
+You remember how to do that, right?
