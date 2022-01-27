@@ -19,6 +19,8 @@ Route::get('/', function () {
 })->name('home');
 
 Route::resource('products', ProductController::class)->only(['index', 'show']);
+Route::resource('posts', PostController::class)->only(['index', 'show'])->parameter('post', 'post:slug');
+
 
 Auth::routes();
 
@@ -28,6 +30,34 @@ Route::namespace('Admin')->prefix('admin')->name('admin.')->middleware('auth')->
 
     Route::get('/', 'HomeController@index')->name('dashboard');
     Route::resource('products', ProductController::class);
+    Route::resource('posts', PostController::class);
+
 
 });
 
+/*
+Routes: sever routes (url singolo post: posts/learn-laravel)
+
+Model: Post
+
+Migrazione: posts
+
+- title - Learn Laravel
+- slug  - learn-laravel
+- sub_title
+- body
+
+Seeder
+
+
+Controllers: admin/guest
+
+
+Table: categories
+- id
+- name
+- slug
+
+Category <-> Post
+
+*/
