@@ -21,8 +21,13 @@ Route::get('/', function () {
 Route::resource('products', ProductController::class)->only(['index', 'show']);
 Route::resource('posts', PostController::class)->only(['index', 'show'])->parameter('post', 'post:slug');
 
+Route::get('categories/{category:slug}/posts', 'CategoryController@posts')->name('categories.posts');
+Route::get('tags/{tag:slug}/posts', 'TagController@posts')->name('tags.posts');
 
-Auth::routes();
+// categories/{category}/posts -> CategoryController@posts
+
+
+Auth::routes(['register' => false]);
 
 
 
@@ -31,6 +36,8 @@ Route::namespace('Admin')->prefix('admin')->name('admin.')->middleware('auth')->
     Route::get('/', 'HomeController@index')->name('dashboard');
     Route::resource('products', ProductController::class);
     Route::resource('posts', PostController::class);
+    Route::resource('categories', CategoryController::class);
+    Route::resource('tags', TagController::class);
 
 
 });

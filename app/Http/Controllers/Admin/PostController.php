@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
-use App\Models\Category;
-use Illuminate\Http\Request;
 use App\Models\Post;
+use App\Models\Category;
+use App\Models\Tag;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 
 class PostController extends Controller
 {
@@ -18,7 +20,9 @@ class PostController extends Controller
      */
     public function index()
     {
-        $posts = Post::orderByDesc('id')->paginate(10);
+        //$posts = Post::orderByDesc('id')->paginate(10);
+        $posts = Auth::user()->posts()->orderByDesc('id')->paginate(10);
+
         return view('admin.posts.index', compact('posts'));
     }
 
@@ -30,7 +34,8 @@ class PostController extends Controller
     public function create()
     {
         $categories = Category::all();
-        return view('admin.posts.create', compact('categories'));
+        $tags = Tag::all();
+        return view('admin.posts.create', compact('categories', 'tags'));
     }
 
     /**
@@ -49,30 +54,29 @@ class PostController extends Controller
             'sub_title' => ['nullable'],
             'cover' => ['nullable'],
             'body' => ['nullable'],
-            'category_id' => ['nullable', 'exists:categories,id']
-
+            'category_id' => ['nullable', 'exists:categories,id'],
         ]);
 
+
+
+        //ddd($validated);
         // Genera slug
         $validated['slug'] = Str::slug($validated['title']);
 
         //ddd($validated);
+        $validated['user_id'] = Auth::id();
         // Salvataggio
-        Post::create($validated);
+        $post = Post::create($validated);
+        if ($request->has('tags')) {
+            $request->validate([
+                'tags' => ['nullable', 'exists:tags,id']
+            ]);
+            $post->tags()->attach($request->tags);
+        }
         // Redirect
         return redirect()->route('admin.posts.index');
     }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Post $post)
-    {
-        //
-    }
 
     /**
      * Show the form for editing the specified resource.
@@ -82,8 +86,15 @@ class PostController extends Controller
      */
     public function edit(Post $post)
     {
+
         $categories = Category::all();
-        return view('admin.posts.edit', compact('post', 'categories'));
+        $tags = Tag::all();
+
+        if (Auth::id() === $post->user_id) {
+            return view('admin.posts.edit', compact('post', 'categories', 'tags'));
+        } else {
+            abort(403);
+        }
     }
 
     /**
@@ -95,26 +106,37 @@ class PostController extends Controller
      */
     public function update(Request $request, Post $post)
     {
-        ddd($request->all());
+        //ddd($request->all());
 
         // Validazione dati
-        $validated = $request->validate([
-            'title' => [
-                'required',
-                Rule::unique('posts')->ignore($post->id), 'max:200'
-            ],
-            'sub_title' => ['nullable'],
-            'cover' => ['nullable'],
-            'body' => ['nullable'],
+        if (Auth::id() === $post->user_id) {
+            $validated = $request->validate([
+                'title' => [
+                    'required',
+                    Rule::unique('posts')->ignore($post->id), 'max:200'
+                ],
+                'sub_title' => ['nullable'],
+                'cover' => ['nullable'],
+                'body' => ['nullable'],
 
-        ]);
+            ]);
 
-        // Genera slug
-        $validated['slug'] = Str::slug($validated['title']);
-        // Salvataggio
-        $post->update($validated);
-        // Redirect
-        return redirect()->route('admin.posts.index')->with('message', 'Post aggiornato con successo');
+            // Genera slug
+            $validated['slug'] = Str::slug($validated['title']);
+            // Salvataggio
+            $post->update($validated);
+
+            if ($request->has('tags')) {
+                $request->validate([
+                    'tags' => ['nullable', 'exists:tags,id']
+                ]);
+                $post->tags()->sync($request->tags);
+            }
+            // Redirect
+            return redirect()->route('admin.posts.index')->with('message', 'Post aggiornato con successo');
+        } else {
+            abort(403);
+        }
     }
 
     /**
@@ -125,7 +147,11 @@ class PostController extends Controller
      */
     public function destroy(Post $post)
     {
-        $post->delete();
-        return redirect()->route('admin.posts.index')->with('message', 'Post cancellato con successo');
+        if (Auth::id() === $post->user_id) {
+            $post->delete();
+            return redirect()->route('admin.posts.index')->with('message', 'Post cancellato con successo');
+        } else {
+            abort(403);
+        }
     }
 }

@@ -473,3 +473,7 @@ Note: you need to add the seeder classes to the DatabaseSeeder.
 ## NOW IMPLEMENT ALL VIEWS and CRUD ops for the given Product resorce
 
 You remember how to do that, right?
+
+## Relationships | One to Many
+
+## Relationships | Many to Many
